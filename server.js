@@ -28,29 +28,37 @@ app.get('/api/projects', async (req, res) => {
 
 // API Upload firmware
 app.post('/api/upload', upload.single('firmware'), async (req, res) => {
-    const { projectName } = req.body;
-    const file = req.file;
+    try {
+        const { projectName } = req.body;
+        const file = req.file;
 
-    if (!file || !projectName) return res.status(400).send('Thiếu file hoặc tên project');
+        if (!file || !projectName) return res.status(400).send('Thiếu file hoặc tên project');
 
-    const filePath = `${projectName}/firmware.bin`;
+        const filePath = `${projectName}/firmware.bin`;
 
-    const { data, error } = await supabase.storage
-        .from('firmwares')
-        .upload(filePath, file.buffer, {
-            contentType: 'application/octet-stream',
-            upsert: true 
-        });
+        const { data, error } = await supabase.storage
+            .from('firmwares')
+            .upload(filePath, file.buffer, {
+                contentType: 'application/octet-stream',
+                upsert: true 
+            });
 
-    if (error) return res.status(500).json(error);
+        if (error) {
+            console.error("Lỗi Upload Supabase:", error); // Thêm dòng này
+            return res.status(500).json({ error: error.message });
+        }
 
-    // CÁCH LẤY URL CHÍNH XÁC:
-    const { data: urlData } = supabase.storage
-        .from('firmwares')
-        .getPublicUrl(filePath);
+        const { data: urlData } = supabase.storage
+            .from('firmwares')
+            .getPublicUrl(filePath);
 
-    // Trả về thuộc tính 'url' rõ ràng cho frontend
-    res.json({ message: 'Thành công', url: urlData.publicUrl });
+        console.log("Dữ liệu URL trả về:", urlData); // Thêm dòng này để kiểm tra log trên Render
+
+        res.json({ message: 'Thành công', url: urlData.publicUrl });
+    } catch (err) {
+        console.error("Lỗi Server:", err);
+        res.status(500).send("Internal Server Error");
+    }
 });
 
 app.listen(PORT, () => console.log(`Server chạy tại port ${PORT}`));
