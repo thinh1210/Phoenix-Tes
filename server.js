@@ -6,9 +6,8 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// THAY THẾ THÔNG TIN CỦA BẠN TẠI ĐÂY
-const SUPABASE_URL = 'https://orttvvuuocflxesiamxf.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ydHR2dnV1b2NmbHhlc2lhbXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwODQyOTEsImV4cCI6MjA4MzY2MDI5MX0.q_1eOjDCT0-oWXIDo7N_Gu6FqcS05sHk5RjG-GL-edM';
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 app.use(express.static('public'));
