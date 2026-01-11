@@ -33,10 +33,8 @@ app.post('/api/upload', upload.single('firmware'), async (req, res) => {
 
     if (!file || !projectName) return res.status(400).send('Thiếu file hoặc tên project');
 
-    // Đường dẫn trên Supabase: <projectName>/firmware.bin
     const filePath = `${projectName}/firmware.bin`;
 
-    // Upload lên Supabase (Ghi đè nếu đã tồn tại)
     const { data, error } = await supabase.storage
         .from('firmwares')
         .upload(filePath, file.buffer, {
@@ -46,12 +44,13 @@ app.post('/api/upload', upload.single('firmware'), async (req, res) => {
 
     if (error) return res.status(500).json(error);
 
-    // Lấy link Public
-    const { data: publicUrl } = supabase.storage
+    // CÁCH LẤY URL CHÍNH XÁC:
+    const { data: urlData } = supabase.storage
         .from('firmwares')
         .getPublicUrl(filePath);
 
-    res.json({ message: 'Thành công', url: publicUrl.publicUrl });
+    // Trả về thuộc tính 'url' rõ ràng cho frontend
+    res.json({ message: 'Thành công', url: urlData.publicUrl });
 });
 
 app.listen(PORT, () => console.log(`Server chạy tại port ${PORT}`));

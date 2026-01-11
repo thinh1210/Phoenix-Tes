@@ -53,11 +53,17 @@
             try {
                 const r = await fetch('/api/upload', { method: 'POST', body: fd });
                 const d = await r.json();
-                status.classList.remove('d-none');
-                status.innerHTML = `<strong>Link Firmware cho ESP32:</strong><br><small>${d.url}</small>`;
+                
+                if (d.url) {
+                    status.classList.remove('d-none');
+                    // Sử dụng d.url thay vì các thuộc tính lồng cấp khác
+                    status.innerHTML = `<strong>Link Firmware cho ESP32:</strong><br><small>${d.url}</small>`;
+                } else {
+                    alert("Không nhận được Link từ server!");
+                }
                 loadProjects();
             } catch (e) {
-                alert("Lỗi upload!");
+                alert("Lỗi kết nối server!");
             } finally {
                 btn.disabled = false;
                 btn.innerText = "Upload & Deploy";
