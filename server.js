@@ -29,35 +29,62 @@ app.get('/api/projects', async (req, res) => {
 // API Upload firmware
 app.post('/api/upload', upload.single('firmware'), async (req, res) => {
     try {
-        const { projectName } = req.body;
+        const { projectName, version } = req.body;
         const file = req.file;
 
-        if (!file || !projectName) return res.status(400).send('Thiếu file hoặc tên project');
+        if (!file || !projectName || !version) {
+            return res.status(400).json({ error: 'Thiếu file, tên project hoặc version' });
+        }
 
-        const filePath = `${projectName}/firmware.bin`;
-
-        const { data, error } = await supabase.storage
+        // 1. Upload file Binary (.bin)
+        const binPath = `${projectName}/firmware.bin`;
+        const { error: binError } = await supabase.storage
             .from('firmwares')
-            .upload(filePath, file.buffer, {
+            .upload(binPath, file.buffer, {
                 contentType: 'application/octet-stream',
                 upsert: true 
             });
 
-        if (error) {
-            console.error("Lỗi Upload Supabase:", error); // Thêm dòng này
-            return res.status(500).json({ error: error.message });
-        }
+        if (binError) throw binError;
 
-        const { data: urlData } = supabase.storage
+        // Lấy link Public của file BIN
+        const { data: binUrlData } = supabase.storage
             .from('firmwares')
-            .getPublicUrl(filePath);
+            .getPublicUrl(binPath);
 
-        console.log("Dữ liệu URL trả về:", urlData); // Thêm dòng này để kiểm tra log trên Render
+        // 2. Tạo nội dung file JSON trạng thái
+        const stateData = {
+            firmware_name: projectName,
+            version: version,
+            url: binUrlData.publicUrl
+        };
+        const stateBuffer = Buffer.from(JSON.stringify(stateData, null, 2));
+        const jsonPath = `${projectName}/firmware_state.json`;
 
-        res.json({ message: 'Thành công', url: urlData.publicUrl });
+        // 3. Upload/Ghi đè file JSON lên Supabase
+        const { error: jsonError } = await supabase.storage
+            .from('firmwares')
+            .upload(jsonPath, stateBuffer, {
+                contentType: 'application/json',
+                upsert: true 
+            });
+
+        if (jsonError) throw jsonError;
+
+        // Lấy link Public của file JSON
+        const { data: jsonUrlData } = supabase.storage
+            .from('firmwares')
+            .getPublicUrl(jsonPath);
+
+        res.json({ 
+            message: 'Thành công', 
+            url: binUrlData.publicUrl,
+            jsonUrl: jsonUrlData.publicUrl 
+        });
+
     } catch (err) {
-        console.error("Lỗi Server:", err);
-        res.status(500).send("Internal Server Error");
+        console.error("Lỗi hệ thống:", err);
+        res.status(500).json({ error: err.message || "Internal Server Error" });
     }
 });
 

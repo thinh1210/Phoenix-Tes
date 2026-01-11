@@ -17,6 +17,11 @@
                 <datalist id="existingProjects"></datalist>
             </div>
 
+            <div class="mb-3">
+                <label class="form-label fw-bold">Version (e.g., 1.0.1)</label>
+                <input type="text" id="versionInp" class="form-control" placeholder="1.0.0">
+            </div>
+
             <div class="mb-4">
                 <label class="form-label fw-bold">Firmware File (.bin)</label>
                 <input type="file" id="fileInp" class="form-control" accept=".bin">
@@ -40,8 +45,9 @@
             const status = document.getElementById('status');
             const file = document.getElementById('fileInp').files[0];
             const name = document.getElementById('projName').value;
+            const version = document.getElementById('versionInp').value; // Lấy version
 
-            if(!file || !name) return alert("Vui lòng điền đủ thông tin!");
+            if(!file || !name || !version) return alert("Vui lòng điền đủ thông tin bao gồm cả Version!");
 
             btn.disabled = true;
             btn.innerText = "Đang xử lý...";
@@ -49,22 +55,18 @@
             const fd = new FormData();
             fd.append('firmware', file);
             fd.append('projectName', name);
+            fd.append('version', version); // Gửi version lên server
 
             try {
                 const apiUrl = window.location.origin + '/api/upload'; 
-
-                const r = await fetch(apiUrl, { 
-                    method: 'POST', 
-                    body: fd // fd chứa file firmware và tên project
-                });
+                const r = await fetch(apiUrl, { method: 'POST', body: fd });
                 const d = await r.json();
                 
                 if (d.url) {
                     status.classList.remove('d-none');
-                    // Sử dụng d.url thay vì các thuộc tính lồng cấp khác
-                    status.innerHTML = `<strong>Link Firmware cho ESP32:</strong><br><small>${d.url}</small>`;
+                    status.innerHTML = `<strong>Thành công!</strong><br>Link Binary: <small>${d.url}</small><br>Link JSON: <small>${d.jsonUrl}</small>`;
                 } else {
-                    alert("Không nhận được Link từ server!");
+                    alert("Lỗi: " + (d.error || "Không nhận được phản hồi"));
                 }
                 loadProjects();
             } catch (e) {
@@ -74,7 +76,6 @@
                 btn.innerText = "Upload & Deploy";
             }
         }
-        loadProjects();
     </script>
 </body>
 </html>
