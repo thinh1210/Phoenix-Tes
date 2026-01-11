@@ -51,7 +51,12 @@
             fd.append('projectName', name);
 
             try {
-                const r = await fetch('/api/upload', { method: 'POST', body: fd });
+                const apiUrl = window.location.origin + '/api/upload'; 
+
+                const r = await fetch(apiUrl, { 
+                    method: 'POST', 
+                    body: fd // fd chứa file firmware và tên project
+                });
                 const d = await r.json();
                 
                 if (d.url) {
