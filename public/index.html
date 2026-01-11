@@ -4,22 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>OTA Manager</title>
+    <title>OTA Manager Pro</title>
+    <style>
+        .loading-spinner { display: none; }
+        .btn-loading .loading-spinner { display: inline-block; }
+        .btn-loading .btn-text { display: none; }
+    </style>
 </head>
 <body class="bg-light text-dark">
-    <div class="container py-5" style="max-width: 600px;">
+    <div class="container py-5" style="max-width: 650px;">
         <div class="card shadow border-0 p-4">
-            <h3 class="text-center mb-4">OTA Firmware Portal</h3>
+            <h3 class="text-center mb-4 text-primary">OTA Firmware Portal</h3>
             
             <div class="mb-3">
                 <label class="form-label fw-bold">Project Name</label>
-                <input type="text" id="projName" class="form-control" list="existingProjects" placeholder="Nhập mới hoặc chọn...">
+                <input type="text" id="projName" class="form-control" list="existingProjects" placeholder="Nhập mới hoặc chọn dự án...">
                 <datalist id="existingProjects"></datalist>
             </div>
 
             <div class="mb-3">
-                <label class="form-label fw-bold">Version (e.g., 1.0.1)</label>
-                <input type="text" id="versionInp" class="form-control" placeholder="1.0.0">
+                <label class="form-label fw-bold">Target Version</label>
+                <input type="text" id="versionInp" class="form-control" placeholder="Ví dụ: 1.0.5">
             </div>
 
             <div class="mb-4">
@@ -27,55 +32,83 @@
                 <input type="file" id="fileInp" class="form-control" accept=".bin">
             </div>
 
-            <button onclick="handleUpload()" id="btnUp" class="btn btn-primary w-100 py-2">Upload & Deploy</button>
+            <button onclick="handleUpload()" id="btnUp" class="btn btn-primary w-100 py-2 fw-bold">
+                <span class="spinner-border spinner-border-sm loading-spinner" role="status" aria-hidden="true"></span>
+                <span class="btn-text">Upload & Deploy Firmware</span>
+            </button>
 
-            <div id="status" class="mt-4 p-3 bg-white border rounded d-none" style="word-break: break-all;"></div>
+            <div id="status" class="mt-4 d-none">
+                <div class="alert alert-success border-0 shadow-sm">
+                    <h5 class="alert-heading border-bottom pb-2">🎉 Upload Thành Công!</h5>
+                    <p class="mb-1"><strong>Project:</strong> <span id="resProject"></span></p>
+                    <p class="mb-1"><strong>Version mới nhất:</strong> <span id="resVersion" class="badge bg-success"></span></p>
+                    <hr>
+                    <p class="mb-1 small"><strong>Link JSON (OTA URL):</strong></p>
+                    <code id="resJsonUrl" class="d-block bg-white p-2 border rounded mb-2" style="word-break: break-all;"></code>
+                    <p class="mb-0 small text-muted">* Sao chép link JSON này dán vào mã nguồn ESP32 của bạn.</p>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        // Load danh sách project hiện có
         async function loadProjects() {
-            const r = await fetch('/api/projects');
-            const projects = await r.json();
-            document.getElementById('existingProjects').innerHTML = projects.map(p => `<option value="${p}">`).join('');
+            try {
+                const r = await fetch('/api/projects');
+                const projects = await r.json();
+                document.getElementById('existingProjects').innerHTML = projects.map(p => `<option value="${p}">`).join('');
+            } catch (e) { console.error("Không thể load danh sách dự án"); }
         }
 
         async function handleUpload() {
             const btn = document.getElementById('btnUp');
-            const status = document.getElementById('status');
+            const statusDiv = document.getElementById('status');
             const file = document.getElementById('fileInp').files[0];
             const name = document.getElementById('projName').value;
-            const version = document.getElementById('versionInp').value; // Lấy version
+            const version = document.getElementById('versionInp').value;
 
-            if(!file || !name || !version) return alert("Vui lòng điền đủ thông tin bao gồm cả Version!");
+            if(!file || !name || !version) {
+                return alert("Vui lòng điền đầy đủ: Tên dự án, Version và chọn File!");
+            }
 
+            // Hiệu ứng Loading
             btn.disabled = true;
-            btn.innerText = "Đang xử lý...";
+            btn.classList.add('btn-loading');
+            statusDiv.classList.add('d-none'); // Ẩn kết quả cũ nếu có
             
             const fd = new FormData();
             fd.append('firmware', file);
             fd.append('projectName', name);
-            fd.append('version', version); // Gửi version lên server
+            fd.append('version', version);
 
             try {
                 const apiUrl = window.location.origin + '/api/upload'; 
                 const r = await fetch(apiUrl, { method: 'POST', body: fd });
                 const d = await r.json();
                 
-                if (d.url) {
-                    status.classList.remove('d-none');
-                    status.innerHTML = `<strong>Thành công!</strong><br>Link Binary: <small>${d.url}</small><br>Link JSON: <small>${d.jsonUrl}</small>`;
+                if (r.ok && d.url) {
+                    // Hiển thị thông tin thành công
+                    document.getElementById('resProject').innerText = name;
+                    document.getElementById('resVersion').innerText = version;
+                    document.getElementById('resJsonUrl').innerText = d.jsonUrl;
+                    
+                    statusDiv.classList.remove('d-none');
+                    // Cuộn xuống cuối trang để người dùng thấy kết quả
+                    statusDiv.scrollIntoView({ behavior: 'smooth' });
                 } else {
-                    alert("Lỗi: " + (d.error || "Không nhận được phản hồi"));
+                    alert("Lỗi từ server: " + (d.error || "Không rõ nguyên nhân"));
                 }
-                loadProjects();
             } catch (e) {
-                alert("Lỗi kết nối server!");
+                alert("Lỗi kết nối server: " + e.message);
             } finally {
+                // Tắt hiệu ứng Loading
                 btn.disabled = false;
-                btn.innerText = "Upload & Deploy";
+                btn.classList.remove('btn-loading');
+                loadProjects();
             }
         }
+        loadProjects();
     </script>
 </body>
 </html>
