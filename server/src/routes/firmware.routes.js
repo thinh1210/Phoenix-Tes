@@ -11,10 +11,14 @@ const { upload } = require('../middlewares/upload.middleware');
 // Projects
 router.get('/projects', requireAuth, firmwareController.getProjects);
 router.post('/projects', requireAuth, firmwareController.createProject);
+router.put('/projects/:id', requireAuth, firmwareController.updateProject);
+router.delete('/projects/:id', requireAuth, firmwareController.deleteProject);
 
 // Firmwares
 router.get('/', requireAuth, firmwareController.getLatestFirmwares);
 router.get('/:projectId/history', requireAuth, firmwareController.getProjectHistory);
 router.post('/upload', requireAuth, upload.single('firmware'), firmwareController.uploadFirmware);
+router.put('/:id', requireAuth, upload.single('firmware'), firmwareController.updateFirmware);
+router.delete('/:id', requireAuth, firmwareController.deleteFirmware);
 
 module.exports = router;

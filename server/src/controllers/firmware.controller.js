@@ -183,6 +183,161 @@ const firmwareController = {
             console.error('Upload firmware error:', error);
             res.status(500).json({ error: 'Lỗi hệ thống trong quá trình upload' });
         }
+    },
+
+    // 6. Cập nhật project (Device Type)
+    updateProject: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { name, description } = req.body;
+
+            const { data, error } = await supabase
+                .from('projects')
+                .update({ name, description, updated_at: new Date() })
+                .eq('id', id)
+                .select();
+
+            if (error) {
+                if (error.code === '23505') {
+                    return res.status(409).json({ error: 'Tên dự án đã tồn tại' });
+                }
+                throw error;
+            }
+
+            if (!data || data.length === 0) {
+                 return res.status(404).json({ error: 'Không tìm thấy dự án' });
+            }
+
+            res.json(data[0]);
+        } catch (error) {
+            console.error('Error updating project:', error);
+            res.status(500).json({ error: 'Lỗi khi cập nhật dự án' });
+        }
+    },
+
+    // 7. Xóa project (Device Type)
+    deleteProject: async (req, res) => {
+        try {
+            const { id } = req.params;
+            // Firmware versions sẽ tự động bị xóa theo nhờ khóa ngoại ON DELETE CASCADE trong SQL
+            const { error } = await supabase
+                .from('projects')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            res.json({ message: 'Đã xóa dự án thành công' });
+        } catch (error) {
+            console.error('Error deleting project:', error);
+            res.status(500).json({ error: 'Lỗi khi xóa dự án' });
+        }
+    },
+
+    // 8. Cập nhật Firmware Version
+    updateFirmware: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { version, releaseNotes } = req.body;
+            const file = req.file;
+
+            // Get existing firmware
+            const { data: existing, error: getError } = await supabase
+                .from('firmware_versions')
+                .select('*, projects(name)')
+                .eq('id', id)
+                .single();
+
+            if (getError || !existing) {
+                 return res.status(404).json({ error: 'Không tìm thấy firmware' });
+            }
+
+            const projectName = existing.projects.name;
+            let binUrl = existing.bin_url;
+            let stateUrl = existing.state_url;
+
+            // Nếu upload file mới
+            if (file) {
+                 const binPath = `${projectName}/${version}/firmware.bin`;
+                 const { error: binUploadError } = await supabase.storage
+                     .from('firmwares')
+                     .upload(binPath, file.buffer, {
+                         contentType: 'application/octet-stream',
+                         upsert: true
+                     });
+                 if (binUploadError) throw binUploadError;
+
+                 const { data: binUrlData } = supabase.storage
+                     .from('firmwares')
+                     .getPublicUrl(binPath);
+                 binUrl = binUrlData.publicUrl;
+
+                 // Cập nhật lại state.json
+                 const stateData = {
+                     firmware_name: projectName,
+                     version: version,
+                     url: binUrl
+                 };
+                 const stateBuffer = Buffer.from(JSON.stringify(stateData, null, 2));
+                 const jsonPath = `${projectName}/firmware_state.json`;
+
+                 await supabase.storage.from('firmwares').upload(jsonPath, stateBuffer, { contentType: 'application/json', upsert: true });
+                 
+                 const { data: jsonUrlData } = supabase.storage.from('firmwares').getPublicUrl(jsonPath);
+                 stateUrl = jsonUrlData.publicUrl;
+            } else if (version !== existing.version) {
+                 // Nếu chỉ đổi version string, cập nhật state.json để đồng bộ nếu cần
+                 const stateData = {
+                     firmware_name: projectName,
+                     version: version,
+                     url: binUrl
+                 };
+                 const stateBuffer = Buffer.from(JSON.stringify(stateData, null, 2));
+                 const jsonPath = `${projectName}/firmware_state.json`;
+                 await supabase.storage.from('firmwares').upload(jsonPath, stateBuffer, { contentType: 'application/json', upsert: true });
+            }
+
+            // Update database record
+            const { data: updatedFirmware, error: updateError } = await supabase
+                .from('firmware_versions')
+                .update({
+                    version: version,
+                    release_notes: releaseNotes || null,
+                    bin_url: binUrl,
+                    state_url: stateUrl
+                })
+                .eq('id', id)
+                .select();
+
+            if (updateError) {
+                 if (updateError.code === '23505') {
+                     return res.status(409).json({ error: 'Phiên bản này đã tồn tại' });
+                 }
+                 throw updateError;
+            }
+
+            res.json({ message: 'Cập nhật thành công', data: updatedFirmware[0] });
+
+        } catch (error) {
+            console.error('Error updating firmware:', error);
+            res.status(500).json({ error: 'Lỗi khi cập nhật firmware' });
+        }
+    },
+
+    // 9. Xóa Firmware Version
+    deleteFirmware: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { error } = await supabase
+                .from('firmware_versions')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            res.json({ message: 'Xóa firmware thành công' });
+        } catch (error) {
+            console.error('Error deleting firmware:', error);
+            res.status(500).json({ error: 'Lỗi khi xóa firmware' });
+        }
     }
 };
 
