@@ -21,7 +21,13 @@ app.use(cors({
 app.use('/api/auth', authRoutes);
 app.use('/api/firmwares', firmwareRoutes);
 
-// Test route
+// Test routes
+app.get('/', (req, res) => {
+    // Tự động chuyển hướng người dùng sang giao diện Frontend
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(frontendUrl);
+});
+
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Backend is running' });
 });
