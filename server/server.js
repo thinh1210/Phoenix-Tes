@@ -33,4 +33,8 @@ app.get('/api/health', (req, res) => {
 });
 
 // Chạy server
-app.listen(PORT, () => console.log(`Server đang chạy tại port ${PORT}`));
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => console.log(`Server đang chạy tại port ${PORT}`));
+}
+
+module.exports = app;
