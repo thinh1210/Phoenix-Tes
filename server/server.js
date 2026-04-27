@@ -23,7 +23,7 @@ app.use('/api/firmwares', firmwareRoutes);
 
 // Test routes
 app.get('/', (req, res) => {
-    // Tự động chuyển hướng người dùng sang giao diện Frontend
+    // Tự động chuyển hướng người dùng sang giao diện Frontend trên Render
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     res.redirect(frontendUrl);
 });
