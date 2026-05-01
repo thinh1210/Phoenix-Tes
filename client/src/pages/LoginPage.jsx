@@ -37,7 +37,7 @@ export default function LoginPage() {
         <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
             <div className="max-w-md w-full bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-700">
                 <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold text-white mb-2">Phoenix OTA</h2>
+                    <h2 className="text-3xl font-bold text-white mb-2">OTA Dashboard</h2>
                     <p className="text-gray-400">Sign in to manage firmwares</p>
                 </div>
 

@@ -238,7 +238,7 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between h-16">
                         <div className="flex items-center">
                             <Package className="h-8 w-8 text-blue-500" />
-                            <span className="ml-2 text-xl font-bold text-white">Dashboard OTA</span>
+                            <span className="ml-2 text-xl font-bold text-white">OTA Dashboard</span>
                         </div>
                         <div className="flex items-center gap-4">
                             <span className="text-sm text-gray-300">Welcome, {user?.username}</span>
