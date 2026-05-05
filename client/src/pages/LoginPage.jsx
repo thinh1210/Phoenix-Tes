@@ -95,9 +95,6 @@ export default function LoginPage() {
                     </button>
                 </form>
 
-                {/* <div className="mt-6 text-center text-xs text-gray-500">
-                    Default account: admin / Admin@123
-                </div> */}
             </div>
         </div>
     );
