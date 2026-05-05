@@ -19,14 +19,13 @@
       "dest": "server/server.js"
     },
     {
-      "src": "/(.*)",
-      "dest": "client/$1",
-      "check": true
+      "src": "/(.*\\.(?:js|css|png|jpg|svg|ico|woff2?)$)",
+      "dest": "client/dist/$1"
     },
     {
       "src": "/(.*)",
       "status": 200,
-      "dest": "client/index.html"
+      "dest": "client/dist/index.html"
     }
   ]
 }
