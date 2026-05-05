@@ -6,7 +6,7 @@ import { Lock, User } from 'lucide-react';
 export default function LoginPage() {
     const { user, login } = useAuth();
     const navigate = useNavigate();
-    
+
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -23,13 +23,13 @@ export default function LoginPage() {
         setLoading(true);
 
         const result = await login(username, password);
-        
+
         if (result.success) {
             navigate('/');
         } else {
             setError(result.error);
         }
-        
+
         setLoading(false);
     };
 
@@ -94,10 +94,10 @@ export default function LoginPage() {
                         {loading ? 'Signing in...' : 'Sign In'}
                     </button>
                 </form>
-                
-                <div className="mt-6 text-center text-xs text-gray-500">
+
+                {/* <div className="mt-6 text-center text-xs text-gray-500">
                     Default account: admin / Admin@123
-                </div>
+                </div> */}
             </div>
         </div>
     );
